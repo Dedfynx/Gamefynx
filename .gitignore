@@ -1,0 +1,10 @@
+Roms/
+imgui.ini
+
+# IDE and editor files
+.vscode/
+
+# Build directories
+build/
+
+

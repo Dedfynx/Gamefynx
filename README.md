@@ -17,8 +17,8 @@ A multi-emulator project built in C++ with imGui and SDL3.
 - [x] SDL3 + ImGui setup
 
 ### CHIP-8
-- [ ] Core implementation (opcodes)
-- [ ] Display rendering
+- [X] Core implementation (opcodes)
+- [X] Display rendering
 - [ ] Input handling
 - [ ] Sound
 - [ ] Debugger UI

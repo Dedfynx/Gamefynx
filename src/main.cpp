@@ -9,14 +9,60 @@
 #include "ui/main_window.h"
 #include "ui/screen_renderer.h"
 #include "utils/logger.h"
+#include "utils/file_utils.h"
 
 #ifdef CORE_CHIP8_ENABLED
 #include "core/chip8/chip8.h"
 #endif
 
+int sdlKeyToChip8(SDL_Keycode key)
+{
+    switch (key)
+    {
+    case SDLK_1:
+        return 0x1;
+    case SDLK_2:
+        return 0x2;
+    case SDLK_3:
+        return 0x3;
+    case SDLK_4:
+        return 0xC;
+
+    case SDLK_A:
+        return 0x4;
+    case SDLK_Z:
+        return 0x5;
+    case SDLK_E:
+        return 0x6;
+    case SDLK_R:
+        return 0xD;
+
+    case SDLK_Q:
+        return 0x7;
+    case SDLK_S:
+        return 0x8;
+    case SDLK_D:
+        return 0x9;
+    case SDLK_F:
+        return 0xE;
+
+    case SDLK_W:
+        return 0xA;
+    case SDLK_X:
+        return 0x0;
+    case SDLK_C:
+        return 0xB;
+    case SDLK_V:
+        return 0xF;
+
+    default:
+        return -1; // Touche non mappée
+    }
+}
+
 int main(int argc, char *argv[])
 {
-    //¯\_(ツ)_/¯
+    // ¯\_(ツ)_/¯
     (void)argv;
     (void)argc;
 
@@ -76,6 +122,7 @@ int main(int argc, char *argv[])
 
 #ifdef CORE_CHIP8_ENABLED
     emulator = std::make_unique<Chip8Emulator>();
+    LOG_INFO("CHIP-8 emulator core loaded");
 #else
     LOG_WARN("No emulator core enabled!");
 #endif
@@ -101,11 +148,31 @@ int main(int argc, char *argv[])
                 running = false;
             }
 
-            if (event.type == SDL_EVENT_KEY_DOWN)
+            if (emulator && rom_loaded)
             {
-                if (event.key.key == SDLK_ESCAPE)
+                if (event.type == SDL_EVENT_KEY_DOWN)
                 {
-                    running = false;
+                    int chip8_key = sdlKeyToChip8(event.key.key);
+                    if (chip8_key != -1)
+                    {
+                        emulator->setButton(chip8_key, true);
+                        LOG_DEBUG("Key pressed: CHIP-8 key {:#x}", chip8_key);
+                    }
+
+                    if (event.key.key == SDLK_ESCAPE)
+                    {
+                        running = false;
+                    }
+                }
+
+                if (event.type == SDL_EVENT_KEY_UP)
+                {
+                    int chip8_key = sdlKeyToChip8(event.key.key);
+                    if (chip8_key != -1)
+                    {
+                        emulator->setButton(chip8_key, false);
+                        LOG_DEBUG("Key released: CHIP-8 key {:#x}", chip8_key);
+                    }
                 }
             }
         }
@@ -129,12 +196,19 @@ int main(int argc, char *argv[])
         // Handle actions
         if (mainWindow.shouldLoadROM())
         {
-            std::string rom_path = "../Roms/chip8/test/test_opcode.ch8";
+            std::string rom_path = FileUtils::openFileDialog(
+                "Select CHIP-8 ROM",
+                {"CHIP-8 ROMs (*.ch8 *.c8)", "*.ch8 *.c8",
+                 "All Files", "*"});
 
-            if (emulator && emulator->loadROM(rom_path))
+            if (!rom_path.empty())
             {
-                rom_loaded = true;
+                if (emulator && emulator->loadROM(rom_path))
+                {
+                    rom_loaded = true;
+                }
             }
+            
             mainWindow.clearFlags();
         }
 
@@ -148,7 +222,6 @@ int main(int argc, char *argv[])
             mainWindow.clearFlags();
         }
 
-        // ⚡ IMPORTANT: Execute emulator
         if (emulator && rom_loaded && !mainWindow.isPaused())
         {
             emulator->runFrame();

@@ -1,6 +1,10 @@
 #include "ui/main_window.h"
 #include <imgui.h>
 
+#ifdef CORE_CHIP8_ENABLED
+#include "core/chip8/chip8.h"
+#endif
+
 MainWindow::MainWindow() {
     // Initialisation si nécessaire
 }
@@ -36,7 +40,7 @@ void MainWindow::renderMenuBar() {
                 load_rom_requested = true;
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Exit", "Alt+F4")) {
+            if (ImGui::MenuItem("Exit", "Esc")) {
                 // Signal pour fermer l'app (géré dans main)
             }
             ImGui::EndMenu();
@@ -87,10 +91,41 @@ void MainWindow::renderControlPanel(IEmulator* emulator) {
         
         ImGui::Separator();
         
-        // Options
-        ImGui::Text("Options:");
-        static int speed = 100;
-        ImGui::SliderInt("Speed %%", &speed, 25, 400);
+        #ifdef CORE_CHIP8_ENABLED
+        auto* chip8 = dynamic_cast<Chip8Emulator*>(emulator);
+        if (chip8) {
+            const auto& keys = chip8->getKeypad();
+            
+            const char* labels[16] = {
+                "1", "2", "3", "C",
+                "4", "5", "6", "D",
+                "7", "8", "9", "E",
+                "A", "0", "B", "F"
+            };
+            
+            for (int row = 0; row < 4; ++row) {
+                for (int col = 0; col < 4; ++col) {
+                    int idx = row * 4 + col;
+                    
+                    if (col > 0) ImGui::SameLine();
+                    
+                    ImVec4 color = keys[idx] ? 
+                        ImVec4(0.2f, 0.8f, 0.2f, 1.0f) :  //Vert
+                        ImVec4(0.3f, 0.3f, 0.3f, 1.0f);   //Gris
+                    
+                    ImGui::PushStyleColor(ImGuiCol_Button, color);
+                    ImGui::Button(labels[idx], ImVec2(40, 40));
+                    ImGui::PopStyleColor();
+                }
+            }
+        }
+        #endif
+        
+        // Visualisation simple (peut être amélioré)
+        ImGui::TextColored(
+            ImVec4(0.5f, 1.0f, 0.5f, 1.0f), 
+            "Press keys to test input"
+        );
         
     } else {
         ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "No emulator loaded");
@@ -101,7 +136,6 @@ void MainWindow::renderControlPanel(IEmulator* emulator) {
     
     ImGui::End();
 }
-
 void MainWindow::renderStats(IEmulator* emulator) {
     ImGui::Begin("Stats");
     
@@ -120,3 +154,4 @@ void MainWindow::clearFlags() {
     load_rom_requested = false;
     reset_requested = false;
 }
+

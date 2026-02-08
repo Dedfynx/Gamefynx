@@ -34,6 +34,9 @@ target_include_directories(imgui PUBLIC
 )
 target_link_libraries(imgui PUBLIC SDL3::SDL3 OpenGL::GL)
 
+# Portable File Dialogs
+set(PFD_DIR ${CMAKE_SOURCE_DIR}/third_party/portable-file-dialogs)
+
 #Common
 add_library(emu_common STATIC
     src/common/emulator_interface.h
@@ -41,22 +44,14 @@ add_library(emu_common STATIC
     src/utils/logger.cpp
     src/utils/file_utils.cpp
 )
-target_include_directories(emu_common PUBLIC src)
+target_include_directories(emu_common PUBLIC 
+    src 
+    ${PFD_DIR} 
+)
 target_link_libraries(emu_common PUBLIC fmt::fmt)
 
 if(ENABLE_LOGGING)
     target_compile_definitions(emu_common PUBLIC ENABLE_LOGGING)
-endif()
-
-#Emulator Cores
-if(BUILD_CORE_CHIP8)
-    add_library(core_chip8 STATIC
-        src/core/chip8/chip8.cpp
-    )
-    target_link_libraries(core_chip8 PUBLIC emu_common)
-    target_compile_definitions(core_chip8 PUBLIC CORE_CHIP8_ENABLED)
-    list(APPEND ENABLED_CORES core_chip8)
-    message(STATUS "✓ CHIP-8 core enabled")
 endif()
 
 #UI
@@ -68,6 +63,20 @@ target_link_libraries(emu_ui PUBLIC
     emu_common
     imgui
 )
+
+#Emulator Cores
+if(BUILD_CORE_CHIP8)
+    add_library(core_chip8 STATIC
+        src/core/chip8/chip8.cpp
+    )
+    target_link_libraries(core_chip8 PUBLIC emu_common)
+    target_compile_definitions(core_chip8 PUBLIC CORE_CHIP8_ENABLED)
+    target_compile_definitions(emu_ui PUBLIC CORE_CHIP8_ENABLED)
+    list(APPEND ENABLED_CORES core_chip8)
+    message(STATUS "✓ CHIP-8 core enabled")
+endif()
+
+
 
 #Exe
 add_executable(Gamefynx

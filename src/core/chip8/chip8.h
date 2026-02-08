@@ -22,6 +22,7 @@ public:
     uint16_t getPC() const { return pc; }
     uint16_t getI() const { return I; }
     uint8_t getV(int reg) const { return V[reg]; }
+    const std::array<uint8_t, 16>& getKeypad() const { return keypad; }
     
 private:
     // Specs CHIP-8
@@ -33,6 +34,7 @@ private:
     std::array<uint8_t, 64*32> display{};     // 64x32 monochrome
     bool draw_flag = false;
     std::array<uint8_t, 16> keypad{};         // 16 touches
+    
     
     uint8_t delay_timer = 0;
     uint8_t sound_timer = 0;

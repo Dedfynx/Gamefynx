@@ -15,6 +15,7 @@ add_compile_options(-Wall -Wextra)
 
 find_package(SDL3 REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(fmt REQUIRED)
 
 # ImGui library
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/third_party/imgui)
@@ -41,6 +42,7 @@ add_library(emu_common STATIC
     src/utils/file_utils.cpp
 )
 target_include_directories(emu_common PUBLIC src)
+target_link_libraries(emu_common PUBLIC fmt::fmt)
 
 if(ENABLE_LOGGING)
     target_compile_definitions(emu_common PUBLIC ENABLE_LOGGING)

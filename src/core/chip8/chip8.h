@@ -1,6 +1,7 @@
 #pragma once
 #include "common/emulator_interface.h"
 #include "common/types.h"
+#include "utils/Audio.h"
 #include <array>
 
 class Chip8Emulator : public IEmulator {
@@ -18,12 +19,17 @@ public:
     
     void setButton(int button, bool pressed) override;
     std::string getArchName() const override { return "CHIP-8"; }
+    uint16_t getPC() const override{ return pc; }
+    const uint8_t* getMemoryPtr() const override{ return memory.data();};
+    size_t getMemorySize() const override{ return memory.size(); };
 
-    uint16_t getPC() const { return pc; }
     uint16_t getI() const { return I; }
     uint8_t getV(int reg) const { return V[reg]; }
     const std::array<uint8_t, 16>& getKeypad() const { return keypad; }
-    
+
+    void setAudio(Audio* audio) { this->audio = audio; }
+
+
 private:
     // Specs CHIP-8
     std::array<uint8_t, 4096> memory{};       // 4K RAM
@@ -38,6 +44,8 @@ private:
     
     uint8_t delay_timer = 0;
     uint8_t sound_timer = 0;
+
+    Audio* audio = nullptr;
     
     std::array<uint16_t, 16> stack{};
     uint8_t sp = 0;
@@ -63,6 +71,6 @@ private:
     void op_Exxx(uint16_t opcode);  // EX9E, EXA1 - Input
     void op_Fxxx(uint16_t opcode);  // Timers, memory, etc.
 
-    void loadFontset();        // Charge les sprites de font en mémoire
-    void updateTimers();       // Décrémente les timers
+    void loadFontset();
+    void updateTimers();
 };

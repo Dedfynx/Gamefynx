@@ -3,8 +3,10 @@ imgui.ini
 
 # IDE and editor files
 .vscode/
+.idea/
 
 # Build directories
 build/
+cmake-build-debug/
 
 

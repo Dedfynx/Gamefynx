@@ -1,11 +1,7 @@
-#include "ui/screen_renderer.h"
+#include "ui/screenRenderer.h"
 #include <imgui.h>
 #include <SDL3/SDL_opengl.h>
 #include <vector>
-
-ScreenRenderer::ScreenRenderer() {
-    // Texture sera créée au premier render
-}
 
 ScreenRenderer::~ScreenRenderer() {
     if (texture_id != 0) {
@@ -40,7 +36,7 @@ void ScreenRenderer::render(const uint8_t* framebuffer, int width, int height) {
     
     // Affiche la texture
     ImVec2 size(static_cast<float>(width * scale), static_cast<float>(height * scale));
-    ImGui::Image((void*)(intptr_t)texture_id, size);
+    ImGui::Image((void*)static_cast<intptr_t>(texture_id), size);
     
     ImGui::End();
 }

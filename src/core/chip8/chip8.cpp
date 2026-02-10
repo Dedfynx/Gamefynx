@@ -138,10 +138,14 @@ void Chip8Emulator::updateTimers() {
     }
     
     if (sound_timer > 0) {
-        if (sound_timer == 1) {
-            // TODO: Jouer un beep
+        if (audio && !audio->isPlaying()) {
+           audio->playBeep();
         }
         --sound_timer;
+        if (audio && sound_timer == 0)
+        {
+            audio->stopBeep();
+        }
     }
 }
 

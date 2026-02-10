@@ -32,6 +32,7 @@ A multi-emulator project built in C++ with imGui and SDL3.
 - [Dear ImGui](https://github.com/ocornut/imgui) - Immediate mode GUI library
 - [SDL3](https://www.libsdl.org/) - Cross-platform multimedia library
 - [FMT](https://fmt.dev/) - A modern formatting library
+- [PDF](https://github.com/samhocevar/portable-file-dialogs/) Portable File Dialogs
 
 ## Resources
 

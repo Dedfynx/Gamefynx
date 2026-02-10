@@ -5,11 +5,13 @@
 #include <SDL3/SDL_opengl.h>
 #include <memory>
 
+#include "imgui_internal.h"
 #include "common/emulator_interface.h"
-#include "ui/main_window.h"
-#include "ui/screen_renderer.h"
+#include "ui/mainWindow.h"
+#include "ui/screenRenderer.h"
 #include "utils/logger.h"
 #include "utils/file_utils.h"
+#include "utils/Audio.h"
 
 #ifdef CORE_CHIP8_ENABLED
 #include "core/chip8/chip8.h"
@@ -56,7 +58,7 @@ int sdlKeyToChip8(SDL_Keycode key)
         return 0xF;
 
     default:
-        return -1; // Touche non mappée
+        return -1;
     }
 }
 
@@ -66,10 +68,8 @@ int main(int argc, char *argv[])
     (void)argv;
     (void)argc;
 
-    // Initialisation SDL3
-    if (!SDL_Init(SDL_INIT_VIDEO))
-    {
-        LOG_ERROR("SDL Error: {}", SDL_GetError());
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
+        LOG_ERROR("SDL initialization failed: {}", SDL_GetError());
         return 1;
     }
 
@@ -80,8 +80,8 @@ int main(int argc, char *argv[])
 
     // Création de la fenêtre
     SDL_Window *window = SDL_CreateWindow(
-        "Gamefynx - Multi-Emulator",
-        1024, 768,
+        "Gamefynx",
+        1280, 768,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
     if (!window)
@@ -108,20 +108,43 @@ int main(int argc, char *argv[])
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Navigation clavier
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    // Style
     ImGui::StyleColorsDark();
+    //
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.WindowRounding = 5.0f;
+    style.FrameRounding = 3.0f;
+    style.GrabRounding = 3.0f;
+    style.ScrollbarRounding = 3.0f;
+    style.WindowPadding = ImVec2(8, 8);
+    style.FramePadding = ImVec2(5, 3);
 
-    // Init backends ImGui
+    ImVec4* colors = style.Colors;
+    colors[ImGuiCol_WindowBg] = ImVec4(0.10f, 0.10f, 0.12f, 1.00f);
+    colors[ImGuiCol_TitleBg] = ImVec4(0.15f, 0.15f, 0.17f, 1.00f);
+    colors[ImGuiCol_TitleBgActive] = ImVec4(0.20f, 0.22f, 0.27f, 1.00f);
+    colors[ImGuiCol_MenuBarBg] = ImVec4(0.15f, 0.15f, 0.17f, 1.00f);
+    //
     ImGui_ImplSDL3_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init("#version 330 core");
 
-    // Crée l'émulateur
     std::unique_ptr<IEmulator> emulator;
+
+    Audio audio;
+    if (!audio.init())
+    {
+        LOG_WARN("Audio initialization failed");
+    }
 
 #ifdef CORE_CHIP8_ENABLED
     emulator = std::make_unique<Chip8Emulator>();
+    auto* chip8 = dynamic_cast<Chip8Emulator*>(emulator.get());
+    if (chip8) {
+        chip8->setAudio(&audio);
+    }
     LOG_INFO("CHIP-8 emulator core loaded");
 #else
     LOG_WARN("No emulator core enabled!");
@@ -182,9 +205,53 @@ int main(int argc, char *argv[])
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(viewport->WorkPos);
+        ImGui::SetNextWindowSize(viewport->WorkSize);
+        ImGui::SetNextWindowViewport(viewport->ID);
+
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+        window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
+        window_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+
+        ImGui::Begin("DockSpace", nullptr, window_flags);
+        ImGui::PopStyleVar(3);
+
+        // DockSpace
+        ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+
+        // ⚡ Menu bar (délégué à MainWindow)
+        mainWindow.renderMenuBar();
+
+        // Layout par défaut (première fois)
+        static bool first_time = true;
+        if (first_time) {
+            first_time = false;
+
+            ImGui::DockBuilderRemoveNode(dockspace_id);
+            ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+            ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
+
+            ImGuiID dock_main_id = dockspace_id;
+            ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.25f, nullptr, &dock_main_id);
+            ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.25f, nullptr, &dock_main_id);
+
+            ImGui::DockBuilderDockWindow("CHIP-8 Screen", dock_main_id);
+            ImGui::DockBuilderDockWindow("Controls", dock_id_left);
+            ImGui::DockBuilderDockWindow("Stats", dock_id_right);
+
+            ImGui::DockBuilderFinish(dockspace_id);
+        }
+
+        ImGui::End();
         // Render UI
         mainWindow.render(emulator.get());
-
         if (emulator && rom_loaded)
         {
             screenRenderer.render(
@@ -222,10 +289,17 @@ int main(int argc, char *argv[])
             mainWindow.clearFlags();
         }
 
+        if (mainWindow.shouldExit()) {
+            running = false;
+            mainWindow.clearFlags();
+        }
+
         if (emulator && rom_loaded && !mainWindow.isPaused())
         {
             emulator->runFrame();
         }
+
+        audio.update();
 
         // Rendering
         ImGui::Render();

@@ -39,10 +39,11 @@ set(PFD_DIR ${CMAKE_SOURCE_DIR}/third_party/portable-file-dialogs)
 
 #Common
 add_library(emu_common STATIC
-    src/common/emulator_interface.h
-    src/common/types.h
-    src/utils/logger.cpp
-    src/utils/file_utils.cpp
+        src/utils/logger.cpp
+        src/common/emulator_interface.h
+        src/common/types.h
+        src/utils/file_utils.cpp
+        src/utils/audio.cpp
 )
 target_include_directories(emu_common PUBLIC 
     src 
@@ -56,8 +57,8 @@ endif()
 
 #UI
 add_library(emu_ui STATIC
-    src/ui/main_window.cpp
-    src/ui/screen_renderer.cpp
+        src/ui/mainWindow.cpp
+        src/ui/screenRenderer.cpp
 )
 target_link_libraries(emu_ui PUBLIC 
     emu_common

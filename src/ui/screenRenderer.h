@@ -3,7 +3,7 @@
 
 class ScreenRenderer {
 public:
-    ScreenRenderer();
+    ScreenRenderer() = default;
     ~ScreenRenderer();
     
     void render(const uint8_t* framebuffer, int width, int height);

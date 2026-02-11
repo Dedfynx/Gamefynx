@@ -5,10 +5,10 @@ A multi-emulator project built in C++ with imGui and SDL3.
 
 ### Supported Systems
 
-| System | Status | Notes |
-|--------|--------|-------|
-| CHIP-8 |  In Progress | Simple 8-bit system |
-| Game Boy |  Planned | DMG (original Game Boy) |
+| System | Status      | Notes |
+|--------|-------------|-------|
+| CHIP-8 | Almost Done | Simple 8-bit system |
+| Game Boy | In Progress | DMG (original Game Boy) |
 
 
 ## Roadmap
@@ -17,15 +17,21 @@ A multi-emulator project built in C++ with imGui and SDL3.
 - [x] SDL3 + ImGui setup
 
 ### CHIP-8
-- [X] Core implementation (opcodes)
+- [X] Core implementation
 - [X] Display rendering
 - [X] Input handling
 - [ ] Sound
 - [X] Debugger UI
 
+### Gameboy
+- [ ] CPU
+- [ ] MMU
+- [ ] PPU
+- [ ] Input handling
+- [ ] Sound
 
 ### Future Systems
-- [ ] GameBoy
+-
 
 ## Librairy
 

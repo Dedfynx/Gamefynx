@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Options
-option(BUILD_CORE_CHIP8    "Build CHIP-8 emulator core"     ON)
+option(BUILD_CORE_CHIP8    "Build CHIP-8 emulator core"     OFF)
 option(BUILD_CORE_GAMEBOY  "Build Game Boy emulator core"   ON)
 option(BUILD_WITH_DEBUGGER "Build with debugger UI"         ON)
 option(ENABLE_LOGGING      "Enable logging system"          ON)

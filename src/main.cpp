@@ -146,10 +146,10 @@ int main(int argc, char *argv[])
         chip8->setAudio(&audio);
     }
     LOG_INFO("CHIP-8 emulator core loaded");
-#else
-    LOG_WARN("No emulator core enabled!");
 #endif
-
+#ifdef CORE_GAMEBOY_ENABLED
+    LOG_INFO("Game Boy emulator core loaded");
+#endif
     // UI Components
     MainWindow mainWindow;
     ScreenRenderer screenRenderer;

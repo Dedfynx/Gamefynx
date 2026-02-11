@@ -4,6 +4,9 @@
 #ifdef CORE_CHIP8_ENABLED
 #include "core/chip8/chip8.h"
 #endif
+#ifdef CORE_GAMEBOY_ENABLED
+#include "core/gameboy/Gameboy.h"
+#endif
 
 void MainWindow::render(IEmulator *emulator)
 {
@@ -180,8 +183,48 @@ void MainWindow::renderMemoryWatch(IEmulator* emulator) {
         }
     }
 #endif
+#ifdef CORE_GAMEBOY_ENABLED
+    if (auto* gb = dynamic_cast<Gameboy*>(emulator)) {
+        if (ImGui::CollapsingHeader("Game Boy Registers", ImGuiTreeNodeFlags_DefaultOpen)) {
+            const auto& cpu = gb->getCPU();
 
-    // --- PARTIE MÉMOIRE (Générique) ---
+            ImGui::Columns(2, nullptr, false);
+
+            // Registres 16-bit
+            ImGui::Text("AF: 0x%04X", cpu.af);
+            ImGui::NextColumn();
+            ImGui::Text("BC: 0x%04X", cpu.bc);
+            ImGui::NextColumn();
+
+            ImGui::Text("DE: 0x%04X", cpu.de);
+            ImGui::NextColumn();
+            ImGui::Text("HL: 0x%04X", cpu.hl);
+            ImGui::NextColumn();
+
+            ImGui::Text("SP: 0x%04X", cpu.sp);
+            ImGui::NextColumn();
+            ImGui::Text("PC: 0x%04X", cpu.pc);
+            ImGui::NextColumn();
+
+            ImGui::Columns(1);
+            ImGui::Separator();
+
+            // Flags
+            uint8_t flags = cpu.f;
+            ImGui::Text("Flags: %c%c%c%c",
+                flags & 0x80 ? 'Z' : '-',
+                flags & 0x40 ? 'N' : '-',
+                flags & 0x20 ? 'H' : '-',
+                flags & 0x10 ? 'C' : '-'
+            );
+
+            ImGui::Separator();
+            ImGui::Text("Cycles: %d", cpu.getCycles());
+            ImGui::Text("Halted: %s", cpu.isHalted() ? "Yes" : "No");
+        }
+    }
+#endif
+
     if (ImGui::CollapsingHeader("Memory Watch", ImGuiTreeNodeFlags_DefaultOpen)) {
         displayMemoryGrid(emulator);
     }
@@ -189,13 +232,13 @@ void MainWindow::renderMemoryWatch(IEmulator* emulator) {
     ImGui::End();
 }
 
-void MainWindow::displayMemoryGrid(IEmulator* emu) {
+void MainWindow::displayMemoryGrid(IEmulator* emulator) {
     static bool autoScroll = true;
     ImGui::Checkbox("Follow PC", &autoScroll);
 
-    const uint8_t* mem = emu->getMemoryPtr();
-    size_t memSize = emu->getMemorySize();
-    uint16_t pc = emu->getPC();
+    const uint8_t* mem = emulator->getMemoryPtr();
+    size_t memSize = emulator->getMemorySize();
+    uint16_t pc = emulator->getPC();
 
     if (ImGui::BeginTable("MemTable", 17, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY, ImVec2(0, 300))) {
         ImGui::TableSetupColumn("Addr", ImGuiTableColumnFlags_WidthFixed, 50.0f);

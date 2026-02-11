@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Options
 option(BUILD_CORE_CHIP8    "Build CHIP-8 emulator core"     ON)
+option(BUILD_CORE_GAMEBOY  "Build Game Boy emulator core"   ON)
 option(BUILD_WITH_DEBUGGER "Build with debugger UI"         ON)
 option(ENABLE_LOGGING      "Enable logging system"          ON)
 
@@ -74,10 +75,21 @@ if(BUILD_CORE_CHIP8)
     target_compile_definitions(core_chip8 PUBLIC CORE_CHIP8_ENABLED)
     target_compile_definitions(emu_ui PUBLIC CORE_CHIP8_ENABLED)
     list(APPEND ENABLED_CORES core_chip8)
-    message(STATUS "✓ CHIP-8 core enabled")
+    message(STATUS "CHIP-8 core enabled")
 endif()
 
-
+if(BUILD_CORE_GAMEBOY)
+    add_library(core_gameboy STATIC
+            src/core/gameboy/Gameboy.cpp
+            src/core/gameboy/GB_CPU.cpp
+            src/core/gameboy/GB_MMU.cpp
+    )
+    target_link_libraries(core_gameboy PUBLIC emu_common)
+    target_compile_definitions(core_gameboy PUBLIC CORE_GAMEBOY_ENABLED)
+    target_compile_definitions(emu_ui PUBLIC CORE_GAMEBOY_ENABLED)
+    list(APPEND ENABLED_CORES core_gameboy)
+    message(STATUS "Game Boy core enabled")
+endif()
 
 #Exe
 add_executable(Gamefynx

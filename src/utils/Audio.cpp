@@ -47,28 +47,33 @@ void Audio::stopBeep() {
     }
 }
 
-void Audio::update()
-{
+void Audio::update() {
     if (!is_playing || !stream) return;
 
     int target_samples = 1024;
-    int current_queued_bytes = SDL_GetAudioStreamQueued(stream) / sizeof(float);
+    int queued_samples = SDL_GetAudioStreamQueued(stream) / sizeof(float);
 
-    if (current_queued_bytes < target_samples) {
-        int samples_to_write = (target_samples - current_queued_bytes) / sizeof(float);
+    if (queued_samples < target_samples) {
+        int samples_to_write = target_samples - queued_samples;
         std::vector<float> buffer(samples_to_write);
 
         float phase_increment = frequency / sample_rate;
 
         for (int i = 0; i < samples_to_write; ++i) {
-            // Onde carrée : amplitude 0.2 (ne pas mettre 1.0 car c'est violent pour les oreilles)
-            buffer[i] = (phase < 0.5f) ? 0.2f : -0.2f;
+            float raw_square = (phase < 0.5f) ? 1.0f : -1.0f;
+
+            float smoothed = raw_square;
+            if (phase < 0.02f || (phase > 0.48f && phase < 0.52f) || phase > 0.98f) {
+                float t = std::fmod(phase, 0.02f) / 0.02f;
+                smoothed = raw_square * t;
+            }
+
+            buffer[i] = smoothed * 0.15f;  // Amplitude réduite (15% au lieu de 20%)
 
             phase += phase_increment;
             if (phase >= 1.0f) phase -= 1.0f;
         }
 
-        // ON ENVOIE LES DONNÉES AU STREAM
         SDL_PutAudioStreamData(stream, buffer.data(), buffer.size() * sizeof(float));
     }
 }

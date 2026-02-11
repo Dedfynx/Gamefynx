@@ -19,7 +19,7 @@ public:
 private:
     void renderControlPanel(IEmulator* emulator);
     void renderMemoryWatch(IEmulator* emulator);
-    void displayMemoryGrid(IEmulator* emu);
+    void displayMemoryGrid(IEmulator* emulator);
     void renderStats(IEmulator* emulator);
     
     bool show_demo = false;

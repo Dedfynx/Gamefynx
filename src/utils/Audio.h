@@ -8,8 +8,11 @@ public:
     ~Audio();
 
     bool init();
+    //Chip8
     void playBeep();
     void stopBeep();
+    //
+
     void update();
     bool isPlaying() const { return is_playing; }
 

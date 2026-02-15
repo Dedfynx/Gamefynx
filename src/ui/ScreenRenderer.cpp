@@ -1,4 +1,4 @@
-#include "ui/screenRenderer.h"
+#include "ui/ScreenRenderer.h"
 #include <imgui.h>
 #include <SDL3/SDL_opengl.h>
 #include <vector>

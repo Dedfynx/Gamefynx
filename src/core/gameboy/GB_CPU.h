@@ -10,20 +10,21 @@ class GB_MMU;
 class GB_CPU
 {
 public:
-    GB_CPU(GB_MMU& mmu);
+    explicit GB_CPU(GB_MMU& mmu);
     ~GB_CPU() = default;
 
     void reset();
     void step();
     void execute(uint8_t opcode);
+    void executeCB(uint8_t opcode);
 
     int getCycles() const { return cycles; }
     bool isHalted() const { return halted; }
 
-    // Registres 16 bits (publics pour le debugger)
+    // Registres 16 bits
     uint16_t af = 0, bc = 0, de = 0, hl = 0, sp = 0, pc = 0;
 
-    // Registres 8 bits (références)
+    // Registres 8 bits
     uint8_t& a = reinterpret_cast<uint8_t*>(&af)[1];
     uint8_t& f = reinterpret_cast<uint8_t*>(&af)[0];
     uint8_t& b = reinterpret_cast<uint8_t*>(&bc)[1];
@@ -49,6 +50,11 @@ private:
 
     inline bool getFlag(Flags flag) const { return f & flag; }
     inline void setFlag(Flags flag, bool value) {
-        f = value ? (f | flag) : (f & ~flag);
+        if (value) {
+            f |= static_cast<uint8_t>(flag);
+        } else {
+            f &= ~static_cast<uint8_t>(flag);
+        }
+        f &= 0xF0;
     }
 };

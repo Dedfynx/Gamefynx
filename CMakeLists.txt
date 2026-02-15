@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Options
-option(BUILD_CORE_CHIP8    "Build CHIP-8 emulator core"     OFF)
+option(BUILD_CORE_CHIP8    "Build CHIP-8 emulator core"     ON)
 option(BUILD_CORE_GAMEBOY  "Build Game Boy emulator core"   ON)
 option(BUILD_WITH_DEBUGGER "Build with debugger UI"         ON)
 option(ENABLE_LOGGING      "Enable logging system"          ON)
@@ -40,11 +40,13 @@ set(PFD_DIR ${CMAKE_SOURCE_DIR}/third_party/portable-file-dialogs)
 
 #Common
 add_library(emu_common STATIC
-        src/utils/logger.cpp
-        src/common/emulator_interface.h
         src/common/types.h
-        src/utils/file_utils.cpp
-        src/utils/audio.cpp
+        src/common/EmulatorInterface.h
+        src/common/EmulatorCore.h
+        src/utils/Logger.cpp
+        src/common/InputManager.cpp
+        src/utils/FileUtils.cpp
+        src/utils/Audio.cpp
 )
 target_include_directories(emu_common PUBLIC 
     src 
@@ -58,8 +60,10 @@ endif()
 
 #UI
 add_library(emu_ui STATIC
-        src/ui/mainWindow.cpp
-        src/ui/screenRenderer.cpp
+        src/ui/MainWindow.cpp
+        src/ui/ScreenRenderer.cpp
+        src/ui/Workspace.cpp
+        src/config/ImguiConfig.cpp
 )
 target_link_libraries(emu_ui PUBLIC 
     emu_common
@@ -69,7 +73,7 @@ target_link_libraries(emu_ui PUBLIC
 #Emulator Cores
 if(BUILD_CORE_CHIP8)
     add_library(core_chip8 STATIC
-        src/core/chip8/chip8.cpp
+            src/core/chip8/Chip8.cpp
     )
     target_link_libraries(core_chip8 PUBLIC emu_common)
     target_compile_definitions(core_chip8 PUBLIC CORE_CHIP8_ENABLED)
@@ -93,7 +97,8 @@ endif()
 
 #Exe
 add_executable(Gamefynx
-    src/main.cpp
+        src/main.cpp
+        src/Application.cpp
 )
 
 target_link_libraries(Gamefynx PRIVATE

@@ -3,7 +3,7 @@
 //
 
 #include "Gameboy.h"
-#include "utils/logger.h"
+#include "utils/Logger.h"
 
 Gameboy::Gameboy() : cpu(memory) {
     framebuffer.fill(0xFF);  // Blanc par défaut

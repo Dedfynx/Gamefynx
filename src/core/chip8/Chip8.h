@@ -1,12 +1,12 @@
 #pragma once
-#include "common/emulator_interface.h"
+#include "common/EmulatorInterface.h"
 #include "common/types.h"
 #include "utils/Audio.h"
 #include <array>
 
-class Chip8Emulator : public IEmulator {
+class Chip8 : public IEmulator {
 public:
-    Chip8Emulator();
+    Chip8();
     
     bool loadROM(const std::string& path) override;
     void reset() override;

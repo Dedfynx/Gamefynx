@@ -1,11 +1,7 @@
-//
-// Created by Dedfynx on 11/02/2026.
-//
-
 #pragma once
 
 #include "common/types.h"
-#include "utils/logger.h"
+#include "utils/Logger.h"
 #include <string>
 #include <array>
 #include <vector>
@@ -33,7 +29,9 @@ public:
     void dbg_serial() {
         if (read(0xFF02) == 0x81) {
             char c = static_cast<char>(read(0xFF01));
-            LOG_DEBUG("%c", c);
+            //LOG_DEBUG("%c", c);
+            printf("%c", c);  // ← Direct printf, pas LOG_DEBUG
+            fflush(stdout);
             write(0xFF02, 0x0);
         }
     }
@@ -48,4 +46,6 @@ private:
     uint8_t current_ROM_bank = 1;
     uint8_t current_RAM_bank = 0;
     bool boot_rom_enabled = true;
+
+    void handleMBCWrite(uint16_t addr, uint8_t data);
 };

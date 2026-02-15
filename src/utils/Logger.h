@@ -15,10 +15,9 @@
     #define LOG_DEBUG(...)
 #endif
 
-class Logger {
-public:
-    static void info(const std::string& msg);
-    static void error(const std::string& msg);
-    static void warn(const std::string& msg);
-    static void debug(const std::string& msg);
+namespace Logger {
+    void info(const std::string& msg);
+    void error(const std::string& msg);
+    void warn(const std::string& msg);
+    void debug(const std::string& msg);
 };

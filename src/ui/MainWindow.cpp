@@ -1,12 +1,20 @@
-#include "ui/mainWindow.h"
+#include "ui/MainWindow.h"
 #include <imgui.h>
 
 #ifdef CORE_CHIP8_ENABLED
-#include "core/chip8/chip8.h"
+#include "core/chip8/Chip8.h"
 #endif
 #ifdef CORE_GAMEBOY_ENABLED
 #include "core/gameboy/Gameboy.h"
 #endif
+
+const char* getCoreNameStr(EmulatorCore core) {
+    switch (core) {
+    case EmulatorCore::CHIP8: return "CHIP-8";
+    case EmulatorCore::GameBoy: return "Game Boy";
+    default: return "None";
+    }
+}
 
 void MainWindow::render(IEmulator *emulator)
 {
@@ -35,12 +43,25 @@ void MainWindow::render(IEmulator *emulator)
     }
 }
 
-void MainWindow::renderMenuBar()
+void MainWindow::renderMenuBar(EmulatorCore& current_core, const std::vector<EmulatorCore>& available_cores)
 {
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
         {
+            if (ImGui::BeginMenu("Select Core"))
+            {
+                for (auto core : available_cores) {
+                    bool is_selected = (core == current_core);
+                    if (ImGui::MenuItem(getCoreNameStr(core), nullptr, is_selected)) {
+                        if (core != current_core) {
+                            requested_core = core;
+                            select_core_requested = true;
+                        }
+                    }
+                }
+                ImGui::EndMenu();
+            }
             if (ImGui::MenuItem("Load ROM...", "Ctrl+O"))
             {
                 load_rom_requested = true;
@@ -59,7 +80,7 @@ void MainWindow::renderMenuBar()
             {
                 reset_requested = true;
             }
-            if (ImGui::MenuItem("Pause/Resume", "Space"))
+            if (ImGui::MenuItem(paused ? "Resume" : "Pause", "Space"))
             {
                 paused = !paused;
             }
@@ -78,12 +99,11 @@ void MainWindow::renderMenuBar()
 
         if (ImGui::BeginMenu("Help"))
         {
-            if (ImGui::MenuItem("About"))
-            {
-                show_about = true;
-            }
+            ImGui::MenuItem("About", nullptr, &show_about);
             ImGui::EndMenu();
         }
+        ImGui::Separator();
+        ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Core: %s", getCoreNameStr(current_core));
 
         ImGui::EndMainMenuBar();
     }
@@ -112,7 +132,7 @@ void MainWindow::renderControlPanel(IEmulator *emulator)
         ImGui::Separator();
 
 #ifdef CORE_CHIP8_ENABLED
-        auto *chip8 = dynamic_cast<Chip8Emulator *>(emulator);
+        auto *chip8 = dynamic_cast<Chip8 *>(emulator);
         if (chip8)
         {
             const auto &keys = chip8->getKeypad();
@@ -171,7 +191,7 @@ void MainWindow::renderMemoryWatch(IEmulator* emulator) {
     ImGui::Separator();
 
 #ifdef CORE_CHIP8_ENABLED
-    if (auto* chip8 = dynamic_cast<Chip8Emulator*>(emulator)) {
+    if (auto* chip8 = dynamic_cast<Chip8*>(emulator)) {
         if (ImGui::CollapsingHeader("CHIP-8 Registers", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Columns(4, nullptr, false);
             for (int i = 0; i < 16; i++) {
@@ -289,4 +309,6 @@ void MainWindow::clearFlags()
 {
     load_rom_requested = false;
     reset_requested = false;
+    exit_requested = false;
+    select_core_requested = false;
 }

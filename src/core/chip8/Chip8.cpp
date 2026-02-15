@@ -1,5 +1,5 @@
-#include "core/chip8/chip8.h"
-#include "utils/logger.h"
+#include "core/chip8/Chip8.h"
+#include "utils/Logger.h"
 
 #include <fstream>
 
@@ -22,7 +22,7 @@ static const uint8_t CHIP8_FONTSET[80] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-Chip8Emulator::Chip8Emulator() {
+Chip8::Chip8() {
     memory.fill(0);
     V.fill(0);
     stack.fill(0);
@@ -41,7 +41,7 @@ Chip8Emulator::Chip8Emulator() {
     LOG_INFO("CHIP-8 emulator initialized");
 }
 
-bool Chip8Emulator::loadROM(const std::string& path) {
+bool Chip8::loadROM(const std::string& path) {
     LOG_INFO("Loading ROM: {}", path);
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     if (!file.is_open()) {
@@ -75,7 +75,7 @@ bool Chip8Emulator::loadROM(const std::string& path) {
     return true;
 }
 
-void Chip8Emulator::reset() {
+void Chip8::reset() {
     if (!rom_loaded) {
         LOG_WARN("Reset called but no ROM is loaded");
         return;
@@ -97,7 +97,7 @@ void Chip8Emulator::reset() {
     draw_flag = false;
 }
 
-void Chip8Emulator::step() {
+void Chip8::step() {
     // Fetch opcode (2 bytes, big-endian)
     uint16_t opcode = (memory[pc] << 8) | memory[pc + 1];
     
@@ -108,31 +108,31 @@ void Chip8Emulator::step() {
     updateTimers();
 }
 
-void Chip8Emulator::runFrame() {
+void Chip8::runFrame() {
     // TODO: run ~60 instructions (CHIP-8 ~540Hz, 60fps = ~9 cycles/frame)
     for (int i = 0; i < 9; ++i) {
         step();
     }
 }
 
-const uint8_t* Chip8Emulator::getFramebuffer() const {
+const uint8_t* Chip8::getFramebuffer() const {
     return display.data();
 }
 
-void Chip8Emulator::setButton(int button, bool pressed) {
+void Chip8::setButton(int button, bool pressed) {
     if (button >= 0 && button < 16) {
         keypad[button] = pressed ? 1 : 0;
     }
 }
 
-void Chip8Emulator::loadFontset() {
+void Chip8::loadFontset() {
     // Font sprites vont de 0x000 à 0x04F
     for (int i = 0; i < 80; ++i) {
         memory[i] = CHIP8_FONTSET[i];
     }
 }
 
-void Chip8Emulator::updateTimers() {
+void Chip8::updateTimers() {
     if (delay_timer > 0) {
         --delay_timer;
     }
@@ -149,7 +149,7 @@ void Chip8Emulator::updateTimers() {
     }
 }
 
-void Chip8Emulator::executeOpcode(uint16_t opcode) {
+void Chip8::executeOpcode(uint16_t opcode) {
     // Extrait le premier nibble (4 bits) pour router
     uint8_t first_nibble = (opcode & 0xF000) >> 12;
     
@@ -174,7 +174,7 @@ void Chip8Emulator::executeOpcode(uint16_t opcode) {
 }
 
 #pragma region Opcode
-void Chip8Emulator::op_0xxx(uint16_t opcode) {
+void Chip8::op_0xxx(uint16_t opcode) {
     switch (opcode & 0x00FF) {
         case 0xE0:  // 00E0 - Clear screen
             display.fill(0);
@@ -195,20 +195,20 @@ void Chip8Emulator::op_0xxx(uint16_t opcode) {
     }
 }
 
-void Chip8Emulator::op_1xxx(uint16_t opcode) {
+void Chip8::op_1xxx(uint16_t opcode) {
     // 1NNN - Jump to address NNN
     uint16_t address = opcode & 0x0FFF;
     pc = address;
 }
 
-void Chip8Emulator::op_2xxx(uint16_t opcode) {
+void Chip8::op_2xxx(uint16_t opcode) {
     // 2NNN - Call subroutine at NNN
     stack[sp] = pc;
     ++sp;
     pc = opcode & 0x0FFF;
 }
 
-void Chip8Emulator::op_3xxx(uint16_t opcode) {
+void Chip8::op_3xxx(uint16_t opcode) {
     // 3XNN - Skip next instruction if VX == NN
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t nn = opcode & 0x00FF;
@@ -220,7 +220,7 @@ void Chip8Emulator::op_3xxx(uint16_t opcode) {
     }
 }
 
-void Chip8Emulator::op_4xxx(uint16_t opcode) {
+void Chip8::op_4xxx(uint16_t opcode) {
     // 4XNN - Skip next instruction if VX != NN
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t nn = opcode & 0x00FF;
@@ -232,7 +232,7 @@ void Chip8Emulator::op_4xxx(uint16_t opcode) {
     }
 }
 
-void Chip8Emulator::op_5xxx(uint16_t opcode) {
+void Chip8::op_5xxx(uint16_t opcode) {
     // 5XY0 - Skip next instruction if VX == VY
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t y = (opcode & 0x00F0) >> 4;
@@ -244,7 +244,7 @@ void Chip8Emulator::op_5xxx(uint16_t opcode) {
     }
 }
 
-void Chip8Emulator::op_6xxx(uint16_t opcode) {
+void Chip8::op_6xxx(uint16_t opcode) {
     // 6XNN - Set VX = NN
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t nn = opcode & 0x00FF;
@@ -253,7 +253,7 @@ void Chip8Emulator::op_6xxx(uint16_t opcode) {
     pc += 2;
 }
 
-void Chip8Emulator::op_7xxx(uint16_t opcode) {
+void Chip8::op_7xxx(uint16_t opcode) {
     // 7XNN - Add NN to VX (carry flag not changed)
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t nn = opcode & 0x00FF;
@@ -262,7 +262,7 @@ void Chip8Emulator::op_7xxx(uint16_t opcode) {
     pc += 2;
 }
 
-void Chip8Emulator::op_8xxx(uint16_t opcode) {
+void Chip8::op_8xxx(uint16_t opcode) {
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t y = (opcode & 0x00F0) >> 4;
     uint8_t n = opcode & 0x000F;
@@ -316,7 +316,7 @@ void Chip8Emulator::op_8xxx(uint16_t opcode) {
     pc += 2;
 }
 
-void Chip8Emulator::op_9xxx(uint16_t opcode) {
+void Chip8::op_9xxx(uint16_t opcode) {
     // 9XY0 - Skip next instruction if VX != VY
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t y = (opcode & 0x00F0) >> 4;
@@ -328,19 +328,19 @@ void Chip8Emulator::op_9xxx(uint16_t opcode) {
     }
 }
 
-void Chip8Emulator::op_Axxx(uint16_t opcode) {
+void Chip8::op_Axxx(uint16_t opcode) {
     // ANNN - Set I = NNN
     I = opcode & 0x0FFF;
     pc += 2;
 }
 
-void Chip8Emulator::op_Bxxx(uint16_t opcode) {
+void Chip8::op_Bxxx(uint16_t opcode) {
     // BNNN - Jump to address NNN + V0
     uint16_t address = opcode & 0x0FFF;
     pc = address + V[0];
 }
 
-void Chip8Emulator::op_Cxxx(uint16_t opcode) {
+void Chip8::op_Cxxx(uint16_t opcode) {
     // CXNN - Set VX = random byte AND NN
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t nn = opcode & 0x00FF;
@@ -349,7 +349,7 @@ void Chip8Emulator::op_Cxxx(uint16_t opcode) {
     pc += 2;
 }
 
-void Chip8Emulator::op_Dxxx(uint16_t opcode) {
+void Chip8::op_Dxxx(uint16_t opcode) {
     // DXYN - Draw sprite at (VX, VY) with height N
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t y = (opcode & 0x00F0) >> 4;
@@ -384,7 +384,7 @@ void Chip8Emulator::op_Dxxx(uint16_t opcode) {
     pc += 2;
 }
 
-void Chip8Emulator::op_Exxx(uint16_t opcode) {
+void Chip8::op_Exxx(uint16_t opcode) {
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t nn = opcode & 0x00FF;
     
@@ -407,7 +407,7 @@ void Chip8Emulator::op_Exxx(uint16_t opcode) {
     }
 }
 
-void Chip8Emulator::op_Fxxx(uint16_t opcode) {
+void Chip8::op_Fxxx(uint16_t opcode) {
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t nn = opcode & 0x00FF;
     

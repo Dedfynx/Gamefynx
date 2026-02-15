@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include "common/emulator_interface.h"
+#include "common/EmulatorInterface.h"
 #include "common/types.h"
 #include "GB_MMU.h"
 #include "GB_CPU.h"

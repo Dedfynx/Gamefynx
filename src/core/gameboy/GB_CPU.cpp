@@ -38,12 +38,6 @@ void GB_CPU::step() {
 }
 
 void GB_CPU::execute(uint8_t opcode) {
-    static int count = 0;
-    if (count++ < 100) {  // Log les 100 premières instructions
-        LOG_DEBUG("PC: {:#06x} | OP: {:#04x} | A: {:#04x} F: {:#04x} BC: {:#06x} HL: {:#06x}",
-                  pc - 1, opcode, a, f, bc, hl);
-    }
-
     switch (opcode) {
         case 0x00: cycles += 4; break; //NOP
 
@@ -605,5 +599,44 @@ void GB_CPU::executeCB(uint8_t opcode) {
             LOG_ERROR("Unimplemented CB opcode: {:#04x}", opcode);
             cycles += 8;
             break;
+    }
+}
+void GB_CPU::handleInterrupts(GB_MMU& mmu) {
+    if (!ime) return;
+
+    uint8_t IF = mmu.read(0xFF0F);
+    uint8_t IE = mmu.read(0xFFFF);
+    uint8_t triggered = IF & IE;
+
+    if (triggered == 0) return;
+
+    // VBlank (bit 0)
+    if (triggered & 0x01) {
+        ime = false;
+        mmu.write(0xFF0F, IF & ~0x01);
+
+        mmu.write(--sp, (pc >> 8) & 0xFF);
+        mmu.write(--sp, pc & 0xFF);
+        pc = 0x0040;
+        cycles += 20;
+
+        if (halted) halted = false;
+        return;
+    }
+
+    // ⚡ Joypad (bit 4)
+    if (triggered & 0x10) {
+        LOG_DEBUG("Joypad interrupt handled!");
+
+        ime = false;
+        mmu.write(0xFF0F, IF & ~0x10);
+
+        mmu.write(--sp, (pc >> 8) & 0xFF);
+        mmu.write(--sp, pc & 0xFF);
+        pc = 0x0060;  // Joypad interrupt vector
+        cycles += 20;
+
+        if (halted) halted = false;
+        return;
     }
 }

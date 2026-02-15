@@ -4,8 +4,8 @@
 #include <vector>
 
 ScreenRenderer::~ScreenRenderer() {
-    if (texture_id != 0) {
-        glDeleteTextures(1, &texture_id);
+    if (textureID != 0) {
+        glDeleteTextures(1, &textureID);
     }
 }
 
@@ -13,7 +13,7 @@ void ScreenRenderer::render(const uint8_t* framebuffer, int width, int height) {
     if (!framebuffer) return;
     
     // Crée la texture si nécessaire
-    if (texture_id == 0 || texture_width != width || texture_height != height) {
+    if (textureID == 0 || textureWidth != width || textureHeight != height) {
         createTexture(width, height);
     }
     
@@ -21,7 +21,7 @@ void ScreenRenderer::render(const uint8_t* framebuffer, int width, int height) {
     updateTexture(framebuffer, width, height);
     
     // Fenêtre ImGui
-    ImGui::Begin("CHIP-8 Screen");
+    ImGui::Begin("Screen");
     
     // Options de zoom
     ImGui::Text("Scale:");
@@ -36,20 +36,20 @@ void ScreenRenderer::render(const uint8_t* framebuffer, int width, int height) {
     
     // Affiche la texture
     ImVec2 size(static_cast<float>(width * scale), static_cast<float>(height * scale));
-    ImGui::Image((void*)static_cast<intptr_t>(texture_id), size);
+    ImGui::Image((void*)static_cast<intptr_t>(textureID), size);
     
     ImGui::End();
 }
 
 void ScreenRenderer::createTexture(int width, int height) {
     // Supprime l'ancienne texture
-    if (texture_id != 0) {
-        glDeleteTextures(1, &texture_id);
+    if (textureID != 0) {
+        glDeleteTextures(1, &textureID);
     }
     
     // Crée nouvelle texture
-    glGenTextures(1, &texture_id);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
     
     // Paramètres : nearest neighbor pour pixels nets
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -61,30 +61,44 @@ void ScreenRenderer::createTexture(int width, int height) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
                  GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     
-    texture_width = width;
-    texture_height = height;
+    textureWidth = width;
+    textureHeight = height;
 }
 
 void ScreenRenderer::updateTexture(const uint8_t* framebuffer, int width, int height) {
-    // Convertit monochrome (0/1) en RGBA
-    std::vector<uint8_t> rgba_buffer(width * height * 4);
-    
-    for (int i = 0; i < width * height; ++i) {
-        uint8_t pixel = framebuffer[i];
-        
-        // 0 = noir, 1 = blanc/vert (style retro)
-        uint8_t r = pixel ? 100 : 0;
-        uint8_t g = pixel ? 255 : 20;
-        uint8_t b = pixel ? 100 : 0;
-        
-        rgba_buffer[i * 4 + 0] = r;
-        rgba_buffer[i * 4 + 1] = g;
-        rgba_buffer[i * 4 + 2] = b;
-        rgba_buffer[i * 4 + 3] = 255;  // Alpha
+    if (!framebuffer) return;
+
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    // ⚡ Détecte le format selon la taille
+    bool isMonochrome = (width == 64 && height == 32);  // CHIP-8
+    bool isRGBA = (width == 160 && height == 144);      // Game Boy
+
+    if (isMonochrome) {
+        // CHIP-8 : Convertit monochrome → RGBA
+        std::vector<uint8_t> rgbaBuffer(width * height * 4);
+
+        for (int i = 0; i < width * height; ++i) {
+            uint8_t pixel = framebuffer[i];
+
+            uint8_t r = pixel ? 100 : 0;
+            uint8_t g = pixel ? 255 : 20;
+            uint8_t b = pixel ? 100 : 0;
+
+            rgbaBuffer[i * 4 + 0] = r;
+            rgbaBuffer[i * 4 + 1] = g;
+            rgbaBuffer[i * 4 + 2] = b;
+            rgbaBuffer[i * 4 + 3] = 255;
+        }
+
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,
+                        GL_RGBA, GL_UNSIGNED_BYTE, rgbaBuffer.data());
     }
-    
-    // Upload vers OpenGL
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,
-                    GL_RGBA, GL_UNSIGNED_BYTE, rgba_buffer.data());
+    else if (isRGBA) {
+        // Game Boy
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,
+                        GL_RGBA, GL_UNSIGNED_BYTE, framebuffer);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 }

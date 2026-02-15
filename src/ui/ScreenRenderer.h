@@ -15,8 +15,8 @@ private:
     void createTexture(int width, int height);
     void updateTexture(const uint8_t* framebuffer, int width, int height);
     
-    unsigned int texture_id = 0;
-    int texture_width = 0;
-    int texture_height = 0;
-    int scale = 8;  // Zoom par défaut
+    unsigned int textureID = 0;
+    int textureWidth = 0;
+    int textureHeight = 0;
+    int scale = 4;  // Zoom par défaut
 };

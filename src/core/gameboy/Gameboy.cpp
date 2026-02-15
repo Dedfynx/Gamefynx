@@ -4,8 +4,9 @@
 
 #include "Gameboy.h"
 #include "utils/Logger.h"
+#include "config/EmulatorConfig.h"
 
-Gameboy::Gameboy() : cpu(memory) {
+Gameboy::Gameboy() : cpu(memory), ppu(memory), joypad(memory) {
     framebuffer.fill(0xFF);  // Blanc par défaut
     LOG_DEBUG("Game Boy emulator created");
 }
@@ -25,14 +26,15 @@ bool Gameboy::loadROM(const std::string& path) {
     }
 
     reset();
-    rom_loaded = true;
+    romLoaded = true;
 
     return true;
 }
 
 void Gameboy::reset() {
-    memory.reset();
     cpu.reset();
+    ppu.reset();
+    joypad.reset();
     framebuffer.fill(0xFF);
     LOG_DEBUG("Game Boy emulator reset");
 }
@@ -42,15 +44,33 @@ void Gameboy::step() {
 }
 
 void Gameboy::runFrame() {
-    for (int i = 0; i < 100; ++i) {
+    if (!romLoaded) return;
+
+    cpu.resetCycles();
+
+    while (cpu.getCycles() < Config::GB_CYCLES_PER_FRAME) {
+        int cyclesBefore = cpu.getCycles();
+
         if (!cpu.isHalted()) {
-            step();
+            cpu.step();
+        } else {
+            cpu.addCycles(4);
         }
+
+        int cyclesExecuted = cpu.getCycles() - cyclesBefore;
+        ppu.step(cyclesExecuted);
+    }
+
+    joypad.update();
+
+    if (ppu.isFrameReady()) {
+        std::memcpy(framebuffer.data(), ppu.getFramebuffer(), framebuffer.size());
+        ppu.clearFrameReady();
     }
 }
 
 void Gameboy::setButton(int button, bool pressed) {
-    // TODO: Joypad implementation
+    joypad.setButton(button, pressed);
 }
 
 const uint8_t* Gameboy::getMemoryPtr() const {

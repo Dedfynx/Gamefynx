@@ -1,8 +1,9 @@
 #include "common/InputManager.h"
 #include "common/EmulatorInterface.h"
+#include "utils/Logger.h"
 
 InputManager::InputManager() {
-    button_states.fill(false);
+    buttonStates.fill(false);
 }
 
 void InputManager::processEvent(const SDL_Event& event) {
@@ -12,34 +13,42 @@ void InputManager::processEvent(const SDL_Event& event) {
         // Essaye CHIP-8
         EmulatorButton chip8_btn = sdlKeyToChip8Button(event.key.key);
         if (chip8_btn != EmulatorButton::COUNT) {
-            button_states[static_cast<size_t>(chip8_btn)] = pressed;
+            buttonStates[static_cast<size_t>(chip8_btn)] = pressed;
             return;
         }
 
         // Essaye Game Boy
         EmulatorButton gb_btn = sdlKeyToGameBoyButton(event.key.key);
         if (gb_btn != EmulatorButton::COUNT) {
-            button_states[static_cast<size_t>(gb_btn)] = pressed;
+            buttonStates[static_cast<size_t>(gb_btn)] = pressed;
             return;
         }
     }
 }
 
-void InputManager::updateEmulator(IEmulator* emulator, const std::string& core_name) {
+void InputManager::updateEmulator(IEmulator* emulator, const std::string& coreName) {
     if (!emulator) return;
 
-    if (core_name == "CHIP-8") {
+    if (coreName == "CHIP-8") {
         for (int i = 0; i < 16; ++i) {
             EmulatorButton btn = static_cast<EmulatorButton>(static_cast<int>(EmulatorButton::CHIP8_0) + i);
-            emulator->setButton(i, button_states[static_cast<size_t>(btn)]);
+            emulator->setButton(i, buttonStates[static_cast<size_t>(btn)]);
         }
-    } else if (core_name == "Game Boy") {
+    } else if (coreName == "Game Boy") {
 
+        emulator->setButton(0, buttonStates[static_cast<size_t>(EmulatorButton::GB_A)]);
+        emulator->setButton(1, buttonStates[static_cast<size_t>(EmulatorButton::GB_B)]);
+        emulator->setButton(2, buttonStates[static_cast<size_t>(EmulatorButton::GB_SELECT)]);
+        emulator->setButton(3, buttonStates[static_cast<size_t>(EmulatorButton::GB_START)]);
+        emulator->setButton(4, buttonStates[static_cast<size_t>(EmulatorButton::GB_RIGHT)]);
+        emulator->setButton(5, buttonStates[static_cast<size_t>(EmulatorButton::GB_LEFT)]);
+        emulator->setButton(6, buttonStates[static_cast<size_t>(EmulatorButton::GB_UP)]);
+        emulator->setButton(7, buttonStates[static_cast<size_t>(EmulatorButton::GB_DOWN)]);
     }
 }
 
 bool InputManager::isKeyPressed(EmulatorButton button) const {
-    return button_states[static_cast<size_t>(button)];
+    return buttonStates[static_cast<size_t>(button)];
 }
 
 EmulatorButton InputManager::sdlKeyToChip8Button(SDL_Keycode key) {
@@ -66,14 +75,14 @@ EmulatorButton InputManager::sdlKeyToChip8Button(SDL_Keycode key) {
 
 EmulatorButton InputManager::sdlKeyToGameBoyButton(SDL_Keycode key) {
     switch (key) {
-        case SDLK_W: return EmulatorButton::GB_A;
-        case SDLK_X: return EmulatorButton::GB_B;
-        case SDLK_RETURN: return EmulatorButton::GB_START;
-        case SDLK_SPACE: return EmulatorButton::GB_SELECT;
-        case SDLK_UP: return EmulatorButton::GB_UP;
-        case SDLK_DOWN: return EmulatorButton::GB_DOWN;
-        case SDLK_LEFT: return EmulatorButton::GB_LEFT;
-        case SDLK_RIGHT: return EmulatorButton::GB_RIGHT;
+        case SDLK_A: return EmulatorButton::GB_A;
+        case SDLK_Z: return EmulatorButton::GB_B;
+        case SDLK_R: return EmulatorButton::GB_START;
+        case SDLK_T: return EmulatorButton::GB_SELECT;
+        case SDLK_I: return EmulatorButton::GB_UP;
+        case SDLK_K: return EmulatorButton::GB_DOWN;
+        case SDLK_J: return EmulatorButton::GB_LEFT;
+        case SDLK_L: return EmulatorButton::GB_RIGHT;
         default: return EmulatorButton::COUNT;
     }
 }

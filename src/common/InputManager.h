@@ -24,12 +24,12 @@ public:
     InputManager();
 
     void processEvent(const SDL_Event& event);
-    void updateEmulator(IEmulator* emulator, const std::string& core_name);
+    void updateEmulator(IEmulator* emulator, const std::string& coreName);
 
     bool isKeyPressed(EmulatorButton button) const;
 
 private:
-    std::array<bool, static_cast<size_t>(EmulatorButton::COUNT)> button_states{};
+    std::array<bool, static_cast<size_t>(EmulatorButton::COUNT)> buttonStates{};
 
     EmulatorButton sdlKeyToChip8Button(SDL_Keycode key);
     EmulatorButton sdlKeyToGameBoyButton(SDL_Keycode key);

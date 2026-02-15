@@ -126,9 +126,9 @@ void Application::processEvents() {
             running = false;
         }
 
-        if (!ImGui::GetIO().WantCaptureKeyboard) {
+        //if (!ImGui::GetIO().WantCaptureKeyboard) {
             input.processEvent(event);
-        }
+        //}
     }
 }
 
@@ -160,10 +160,6 @@ void Application::render() {
             emulator->getScreenWidth(),
             emulator->getScreenHeight()
         );
-    }
-
-    if (emulator) {
-        mainWindow.renderMemoryWatch(emulator.get());
     }
 
     handleUserActions();

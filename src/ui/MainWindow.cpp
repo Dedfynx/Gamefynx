@@ -19,13 +19,13 @@ const char* getCoreNameStr(EmulatorCore core) {
 void MainWindow::render(IEmulator *emulator)
 {
     //renderMenuBar();
-    if (show_controls) renderControlPanel(emulator);
-    if (show_memory_watch) renderMemoryWatch(emulator);
-    if (show_stats) renderStats(emulator);
+    if (showControls) renderControlPanel(emulator);
+    if (showMemoryWatch) renderMemoryWatch(emulator);
+    if (showStats) renderStats(emulator);
 
-    if (show_about)
+    if (showAbout)
     {
-        ImGui::Begin("About Gamefynx", &show_about);
+        ImGui::Begin("About Gamefynx", &showAbout);
         ImGui::Text("Gamefynx");
         ImGui::Text("Version 1.0.0");
         ImGui::Separator();
@@ -37,26 +37,27 @@ void MainWindow::render(IEmulator *emulator)
     }
 
     // Demo ImGui (pour apprendre les widgets)
-    if (show_demo)
+    if (showDemo)
     {
-        ImGui::ShowDemoWindow(&show_demo);
+        ImGui::ShowDemoWindow(&showDemo);
     }
 }
 
-void MainWindow::renderMenuBar(EmulatorCore& current_core, const std::vector<EmulatorCore>& available_cores)
+void MainWindow::renderMenuBar(EmulatorCore& currentCore, const std::vector<EmulatorCore>& availableCores)
 {
+
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
         {
             if (ImGui::BeginMenu("Select Core"))
             {
-                for (auto core : available_cores) {
-                    bool is_selected = (core == current_core);
+                for (auto core : availableCores) {
+                    bool is_selected = (core == currentCore);
                     if (ImGui::MenuItem(getCoreNameStr(core), nullptr, is_selected)) {
-                        if (core != current_core) {
-                            requested_core = core;
-                            select_core_requested = true;
+                        if (core != currentCore) {
+                            requestedCore = core;
+                            selectCoreRequested = true;
                         }
                     }
                 }
@@ -64,12 +65,12 @@ void MainWindow::renderMenuBar(EmulatorCore& current_core, const std::vector<Emu
             }
             if (ImGui::MenuItem("Load ROM...", "Ctrl+O"))
             {
-                load_rom_requested = true;
+                loadRomRequested = true;
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit", "Esc"))
             {
-                exit_requested = true;
+                exitRequested = true;
             }
             ImGui::EndMenu();
         }
@@ -78,7 +79,7 @@ void MainWindow::renderMenuBar(EmulatorCore& current_core, const std::vector<Emu
         {
             if (ImGui::MenuItem("Reset", "Ctrl+R"))
             {
-                reset_requested = true;
+                resetRequested = true;
             }
             if (ImGui::MenuItem(paused ? "Resume" : "Pause", "Space"))
             {
@@ -89,21 +90,21 @@ void MainWindow::renderMenuBar(EmulatorCore& current_core, const std::vector<Emu
 
         if (ImGui::BeginMenu("Debug"))
         {
-            ImGui::MenuItem("Show ImGui Demo", nullptr, &show_demo);
-            ImGui::MenuItem("Show Control", nullptr, &show_controls);
-            ImGui::MenuItem("Show Memory Watch", nullptr, &show_memory_watch);
-            ImGui::MenuItem("Show Stats", nullptr, &show_stats);
+            ImGui::MenuItem("Show ImGui Demo", nullptr, &showDemo);
+            ImGui::MenuItem("Show Control", nullptr, &showControls);
+            ImGui::MenuItem("Show Memory Watch", nullptr, &showMemoryWatch);
+            ImGui::MenuItem("Show Stats", nullptr, &showStats);
 
             ImGui::EndMenu();
         }
 
         if (ImGui::BeginMenu("Help"))
         {
-            ImGui::MenuItem("About", nullptr, &show_about);
+            ImGui::MenuItem("About", nullptr, &showAbout);
             ImGui::EndMenu();
         }
         ImGui::Separator();
-        ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Core: %s", getCoreNameStr(current_core));
+        ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Core: %s", getCoreNameStr(currentCore));
 
         ImGui::EndMainMenuBar();
     }
@@ -111,7 +112,7 @@ void MainWindow::renderMenuBar(EmulatorCore& current_core, const std::vector<Emu
 
 void MainWindow::renderControlPanel(IEmulator *emulator)
 {
-    ImGui::Begin("Controls", &show_controls);
+    ImGui::Begin("Controls", &showControls);
 
     if (emulator)
     {
@@ -126,7 +127,7 @@ void MainWindow::renderControlPanel(IEmulator *emulator)
         ImGui::SameLine();
         if (ImGui::Button("Reset"))
         {
-            reset_requested = true;
+            resetRequested = true;
         }
 
         ImGui::Separator();
@@ -175,7 +176,7 @@ void MainWindow::renderControlPanel(IEmulator *emulator)
         ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "No emulator loaded");
         if (ImGui::Button("Load ROM"))
         {
-            load_rom_requested = true;
+            loadRomRequested = true;
         }
     }
 
@@ -185,7 +186,7 @@ void MainWindow::renderControlPanel(IEmulator *emulator)
 void MainWindow::renderMemoryWatch(IEmulator* emulator) {
     if (!emulator) return;
 
-    ImGui::Begin("Universal Debugger", &show_memory_watch);
+    ImGui::Begin("Universal Debugger", &showMemoryWatch);
     ImGui::Text("System: %s", emulator->getArchName().c_str());
     ImGui::Text("PC: 0x%03X", emulator->getPC());
     ImGui::Separator();
@@ -291,7 +292,7 @@ void MainWindow::displayMemoryGrid(IEmulator* emulator) {
 
 void MainWindow::renderStats(IEmulator *emulator)
 {
-    ImGui::Begin("Stats", &show_stats);
+    ImGui::Begin("Stats", &showStats);
 
     ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
@@ -307,8 +308,8 @@ void MainWindow::renderStats(IEmulator *emulator)
 
 void MainWindow::clearFlags()
 {
-    load_rom_requested = false;
-    reset_requested = false;
-    exit_requested = false;
-    select_core_requested = false;
+    loadRomRequested = false;
+    resetRequested = false;
+    exitRequested = false;
+    selectCoreRequested = false;
 }

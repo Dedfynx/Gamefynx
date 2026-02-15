@@ -1,12 +1,10 @@
-//
-// Created by Dedfynx on 11/02/2026.
-//
-
 #pragma once
 #include "common/EmulatorInterface.h"
 #include "common/types.h"
-#include "GB_MMU.h"
-#include "GB_CPU.h"
+#include "core/gameboy/GB_CPU.h"
+#include "core/gameboy/GB_MMU.h"
+#include "core/gameboy/GB_PPU.h"
+#include "core/gameboy/GB_Joypad.h"
 
 class Gameboy : public IEmulator
 {
@@ -36,7 +34,9 @@ class Gameboy : public IEmulator
 private:
     GB_MMU memory;
     GB_CPU cpu;
+    GB_PPU ppu;
+    GB_Joypad joypad;
 
     std::array<uint8_t, 160 * 144 * 4> framebuffer{};
-    bool rom_loaded = false;
+    bool romLoaded = false;
 };

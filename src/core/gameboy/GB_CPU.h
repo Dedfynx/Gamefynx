@@ -21,6 +21,14 @@ public:
     int getCycles() const { return cycles; }
     bool isHalted() const { return halted; }
 
+    void resetCycles() { cycles = 0; }
+    void addCycles(int c) { cycles += c; }
+
+    void handleInterrupts(GB_MMU& mmu);
+
+    bool isIME() const { return ime; }
+    void setIME(bool value) { ime = value; }
+
     // Registres 16 bits
     uint16_t af = 0, bc = 0, de = 0, hl = 0, sp = 0, pc = 0;
 

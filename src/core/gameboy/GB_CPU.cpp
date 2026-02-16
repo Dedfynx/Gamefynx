@@ -30,6 +30,22 @@ void GB_CPU::step() {
         return;
     }
 
+    // ⚡ Détecte les boucles infinies
+    static uint16_t lastPC = 0;
+    static int samePC_count = 0;
+
+    if (pc == lastPC) {
+        samePC_count++;
+        if (samePC_count > 100000) {
+            LOG_ERROR("INFINITE LOOP at PC={:#06x}", pc);
+            halted = true;  // Stop l'émulateur
+            return;
+        }
+    } else {
+        samePC_count = 0;
+        lastPC = pc;
+    }
+
     uint8_t opcode = mmu.read(pc++);
     execute(opcode);
 
@@ -40,6 +56,12 @@ void GB_CPU::step() {
 void GB_CPU::execute(uint8_t opcode) {
     switch (opcode) {
         case 0x00: cycles += 4; break; //NOP
+
+    case 0x10:  // STOP
+        pc++;
+        // On peut ignorer STOP pour les tests
+        cycles += 4;
+        break;
 
         case 0x01: c = mmu.read(pc++); b = mmu.read(pc++); cycles += 12; break;  // LD BC, nn
         case 0x11: e = mmu.read(pc++); d = mmu.read(pc++); cycles += 12; break;  // LD DE, nn
@@ -150,6 +172,19 @@ void GB_CPU::execute(uint8_t opcode) {
             cycles += 12;
         } break;
 
+    case 0x08:  // LD (nn), SP
+        {
+            uint8_t low = mmu.read(pc++);
+            uint8_t high = mmu.read(pc++);
+            uint16_t addr = (high << 8) | low;
+
+            mmu.write(addr, sp & 0xFF);         // Low byte
+            mmu.write(addr + 1, (sp >> 8) & 0xFF);  // High byte
+
+            cycles += 20;
+        }
+        break;
+
         case 0xF9: sp = hl; cycles += 8; break;
 
         case 0xC5: mmu.write(--sp, b); mmu.write(--sp, c); cycles += 16; break;  // PUSH BC
@@ -201,6 +236,94 @@ void GB_CPU::execute(uint8_t opcode) {
         case 0x2B: hl--; cycles += 8; break;  // DEC HL
         case 0x3B: sp--; cycles += 8; break;  // DEC SP
 
+        //add with carry
+    case 0xCE:  // ADC A, n
+        {
+            uint8_t val = mmu.read(pc++);
+            int carry = getFlag(C_FLAG) ? 1 : 0;
+            int result = a + val + carry;
+
+            setFlag(Z_FLAG, (result & 0xFF) == 0);
+            setFlag(N_FLAG, false);
+            setFlag(H_FLAG, ((a & 0x0F) + (val & 0x0F) + carry) > 0x0F);
+            setFlag(C_FLAG, result > 0xFF);
+
+            a = result & 0xFF;
+            cycles += 8;
+        }
+        break;
+    case 0x88: case 0x89: case 0x8A: case 0x8B:
+    case 0x8C: case 0x8D: case 0x8E: case 0x8F:
+        {
+            uint8_t val = 0;
+            switch (opcode & 0x07) {
+            case 0: val = b; break;
+            case 1: val = c; break;
+            case 2: val = d; break;
+            case 3: val = e; break;
+            case 4: val = h; break;
+            case 5: val = l; break;
+            case 6: val = mmu.read(hl); cycles += 4; break;
+            case 7: val = a; break;
+            }
+
+            int carry = getFlag(C_FLAG) ? 1 : 0;
+            int result = a + val + carry;
+
+            setFlag(Z_FLAG, (result & 0xFF) == 0);
+            setFlag(N_FLAG, false);
+            setFlag(H_FLAG, ((a & 0x0F) + (val & 0x0F) + carry) > 0x0F);
+            setFlag(C_FLAG, result > 0xFF);
+
+            a = result & 0xFF;
+            cycles += 4;
+        }
+        break;
+
+        //sub with carry
+    case 0xDE:  // SBC A, n
+        {
+            uint8_t val = mmu.read(pc++);
+            int carry = getFlag(C_FLAG) ? 1 : 0;
+            int result = a - val - carry;
+
+            setFlag(Z_FLAG, (result & 0xFF) == 0);
+            setFlag(N_FLAG, true);
+            setFlag(H_FLAG, ((a & 0x0F) - (val & 0x0F) - carry) < 0);
+            setFlag(C_FLAG, result < 0);
+
+            a = result & 0xFF;
+            cycles += 8;
+        }
+        break;
+        // SBC A, r (Subtract with Carry)
+    case 0x98: case 0x99: case 0x9A: case 0x9B:
+    case 0x9C: case 0x9D: case 0x9E: case 0x9F:
+        {
+            uint8_t val = 0;
+            switch (opcode & 0x07) {
+            case 0: val = b; break;
+            case 1: val = c; break;
+            case 2: val = d; break;
+            case 3: val = e; break;
+            case 4: val = h; break;
+            case 5: val = l; break;
+            case 6: val = mmu.read(hl); cycles += 4; break;
+            case 7: val = a; break;
+            }
+
+            int carry = getFlag(C_FLAG) ? 1 : 0;
+            int result = a - val - carry;
+
+            setFlag(Z_FLAG, (result & 0xFF) == 0);
+            setFlag(N_FLAG, true);
+            setFlag(H_FLAG, ((a & 0x0F) - (val & 0x0F) - carry) < 0);
+            setFlag(C_FLAG, result < 0);
+
+            a = result & 0xFF;
+            cycles += 4;
+        }
+        break;
         //Xor
         case 0xA8: a ^= b; setFlag(Z_FLAG, a == 0); setFlag(N_FLAG, false); setFlag(H_FLAG, false); setFlag(C_FLAG, false); cycles += 4; break;
         case 0xA9: a ^= c; setFlag(Z_FLAG, a == 0); setFlag(N_FLAG, false); setFlag(H_FLAG, false); setFlag(C_FLAG, false); cycles += 4; break;
@@ -393,7 +516,7 @@ void GB_CPU::execute(uint8_t opcode) {
         } break;
 
         default:
-            //LOG_ERROR("Unimplemented opcode: {:#04x} at PC: {:#06x}", opcode, pc - 1);
+            LOG_ERROR("Unimplemented opcode: {:#04x} at PC: {:#06x}", opcode, pc - 1);
             cycles += 4;
             break;
     }

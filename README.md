@@ -25,9 +25,9 @@ A multi-emulator project built in C++ with imGui and SDL3.
 - [X] Debugger UI
 
 ### Gameboy
-- [ ] CPU
-- [ ] MMU
-- [ ] PPU
+- [X] CPU
+- [X] MMU
+- [-] PPU
 - [ ] Input handling
 - [ ] Sound
 

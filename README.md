@@ -27,14 +27,16 @@ A multi-emulator project built in C++ with imGui and SDL3.
 ### Gameboy
 - [X] CPU
 - [X] MMU
-- [-] PPU
+- [X] PPU
 - [ ] Input handling
 - [ ] Sound
 
 
 
 ### Future Systems
--
+- Update vers Gameboy Color
+- NES
+- Atari ST
 
 ## Librairy
 

@@ -6,6 +6,8 @@
 #include <array>
 #include <vector>
 
+#include <core/gameboy/GB_Timer.h>
+class GB_Timer;
 
 class GB_MMU
 {
@@ -36,6 +38,12 @@ public:
         }
     }
 
+    void setTimer(GB_Timer* t) { timer = t; }
+    //!!!!
+    void directWriteTAC(uint8_t value) {
+        memory[0xFF07] = value;
+    }
+
 private:
     std::array<uint8_t, 0x10000> memory{};  // 64KB
 
@@ -46,6 +54,8 @@ private:
     uint8_t current_ROM_bank = 1;
     uint8_t current_RAM_bank = 0;
     bool boot_rom_enabled = true;
+
+    GB_Timer* timer = nullptr;
 
     void handleMBCWrite(uint16_t addr, uint8_t data);
 };

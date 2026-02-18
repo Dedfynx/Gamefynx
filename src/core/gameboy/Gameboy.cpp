@@ -6,7 +6,8 @@
 #include "utils/Logger.h"
 #include "config/EmulatorConfig.h"
 
-Gameboy::Gameboy() : cpu(memory), ppu(memory), joypad(memory) {
+Gameboy::Gameboy() : cpu(memory), ppu(memory), joypad(memory), timer(memory) {
+    memory.setTimer(&timer);
     framebuffer.fill(0xFF);  // Blanc par défaut
     LOG_DEBUG("Game Boy emulator created");
 }
@@ -35,6 +36,7 @@ void Gameboy::reset() {
     cpu.reset();
     ppu.reset();
     joypad.reset();
+    timer.reset();
     framebuffer.fill(0xFF);
     LOG_DEBUG("Game Boy emulator reset");
 }
@@ -51,14 +53,11 @@ void Gameboy::runFrame() {
     while (cpu.getCycles() < Config::GB_CYCLES_PER_FRAME) {
         int cyclesBefore = cpu.getCycles();
 
-        if (!cpu.isHalted()) {
-            cpu.step();
-        } else {
-            cpu.addCycles(4);
-        }
+        cpu.step();
 
         int cyclesExecuted = cpu.getCycles() - cyclesBefore;
         ppu.step(cyclesExecuted);
+        timer.step(cyclesExecuted);
     }
 
     joypad.update();

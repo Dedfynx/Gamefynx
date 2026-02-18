@@ -5,6 +5,7 @@
 #include "core/gameboy/GB_MMU.h"
 #include "core/gameboy/GB_PPU.h"
 #include "core/gameboy/GB_Joypad.h"
+#include "core/gameboy/GB_Timer.h"
 
 class Gameboy : public IEmulator
 {
@@ -36,6 +37,8 @@ private:
     GB_CPU cpu;
     GB_PPU ppu;
     GB_Joypad joypad;
+    GB_Timer timer;
+
 
     std::array<uint8_t, 160 * 144 * 4> framebuffer{};
     bool romLoaded = false;

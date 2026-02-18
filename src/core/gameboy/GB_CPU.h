@@ -46,6 +46,8 @@ private:
     GB_MMU& mmu;
 
     bool ime = false;
+    bool imeScheduled = false;
+
     bool halted = false;
     int cycles = 0;
 

@@ -18,6 +18,7 @@ void GB_CPU::reset() {
     f &=  0xF0; //Force le masque sur les flags
 
     ime = false;
+    imeScheduled = false;
     halted = false;
     cycles = 0;
 
@@ -25,31 +26,31 @@ void GB_CPU::reset() {
 }
 
 void GB_CPU::step() {
+    handleInterrupts(mmu);
+
     if (halted) {
         cycles += 4;
         return;
     }
 
-    // ⚡ Détecte les boucles infinies
-    static uint16_t lastPC = 0;
-    static int samePC_count = 0;
+    if (imeScheduled) {
+        ime = true;
+        imeScheduled = false;
+    }
 
-    if (pc == lastPC) {
-        samePC_count++;
-        if (samePC_count > 100000) {
-            LOG_ERROR("INFINITE LOOP at PC={:#06x}", pc);
-            halted = true;  // Stop l'émulateur
-            return;
-        }
-    } else {
-        samePC_count = 0;
-        lastPC = pc;
+    // ⚡ Log si on exécute du code à 0x0050 (Timer handler)
+    static bool inHandler = false;
+    if (pc >= 0x0050 && pc < 0x0060 && !inHandler) {
+        LOG_DEBUG("Entering Timer handler at PC={:#06x}", pc);
+        inHandler = true;
+    } else if ((pc < 0x0050 || pc >= 0x0060) && inHandler) {
+        LOG_DEBUG("Exiting Timer handler at PC={:#06x}", pc);
+        inHandler = false;
     }
 
     uint8_t opcode = mmu.read(pc++);
     execute(opcode);
 
-    // Debug serial output (Blargg tests)
     mmu.dbg_serial();
 }
 
@@ -417,7 +418,16 @@ void GB_CPU::execute(uint8_t opcode) {
         // ====================================================================
         case 0xD0: { if (!getFlag(C_FLAG)) { uint8_t lo = mmu.read(sp++); uint8_t hi = mmu.read(sp++); pc = (hi << 8) | lo; cycles += 20; } else { cycles += 8; } } break;  // RET NC
         case 0xD8: { if (getFlag(C_FLAG)) { uint8_t lo = mmu.read(sp++); uint8_t hi = mmu.read(sp++); pc = (hi << 8) | lo; cycles += 20; } else { cycles += 8; } } break;  // RET C
-        case 0xD9: { ime = true; uint8_t lo = mmu.read(sp++); uint8_t hi = mmu.read(sp++); pc = (hi << 8) | lo; cycles += 16; } break;  // RETI
+        case 0xD9:  // RETI
+            {
+                uint8_t lo = mmu.read(sp++);
+                uint8_t hi = mmu.read(sp++);
+                pc = (hi << 8) | lo;
+                ime = true;
+                imeScheduled = false;
+                cycles += 16;
+            }
+            break;
 
         // ====================================================================
         // JP variants (plus complets)
@@ -507,8 +517,8 @@ void GB_CPU::execute(uint8_t opcode) {
         case 0xC8: { if (getFlag(Z_FLAG)) { uint8_t lo = mmu.read(sp++); uint8_t hi = mmu.read(sp++); pc = (hi << 8) | lo; cycles += 20; } else { cycles += 8; } } break;  // RET Z
 
         case 0x76: halted = true; cycles += 4; break;  // HALT
-        case 0xF3: ime = false; cycles += 4; break;  // DI
-        case 0xFB: ime = true; cycles += 4; break;  // EI
+        case 0xF3: ime = false; imeScheduled = false;cycles += 4; break;  // DI
+        case 0xFB: imeScheduled = true; cycles += 4; break;  // EI
 
         case 0xCB: {
             uint8_t cb_opcode = mmu.read(pc++);
@@ -724,42 +734,94 @@ void GB_CPU::executeCB(uint8_t opcode) {
             break;
     }
 }
-void GB_CPU::handleInterrupts(GB_MMU& mmu) {
-    if (!ime) return;
 
+void GB_CPU::handleInterrupts(GB_MMU& mmu) {
     uint8_t IF = mmu.read(0xFF0F);
     uint8_t IE = mmu.read(0xFFFF);
-    uint8_t triggered = IF & IE;
 
+    if (halted && (IF & IE & 0x1F)) {
+        halted = false;
+        LOG_DEBUG("CPU woken from HALT by interrupt {:#04x}", IF & IE);
+    }
+
+    // Si IME = false, ne gère pas les interrupts
+    if (!ime) return;
+
+    uint8_t triggered = IF & IE;
     if (triggered == 0) return;
 
-    // VBlank (bit 0)
+    // VBlank (bit 0) - 0x0040
     if (triggered & 0x01) {
         ime = false;
         mmu.write(0xFF0F, IF & ~0x01);
 
-        mmu.write(--sp, (pc >> 8) & 0xFF);
-        mmu.write(--sp, pc & 0xFF);
+        sp--;
+        mmu.write(sp, (pc >> 8) & 0xFF);
+        sp--;
+        mmu.write(sp, pc & 0xFF);
+
         pc = 0x0040;
         cycles += 20;
-
-        if (halted) halted = false;
         return;
     }
 
-    // ⚡ Joypad (bit 4)
-    if (triggered & 0x10) {
-        LOG_DEBUG("Joypad interrupt handled!");
+    // LCD STAT (bit 1) - 0x0048
+    if (triggered & 0x02) {
+        ime = false;
+        mmu.write(0xFF0F, IF & ~0x02);
 
+        sp--;
+        mmu.write(sp, (pc >> 8) & 0xFF);
+        sp--;
+        mmu.write(sp, pc & 0xFF);
+
+        pc = 0x0048;
+        cycles += 20;
+        return;
+    }
+
+    // Timer (bit 2) - 0x0050
+    if (triggered & 0x04) {
+        ime = false;
+        mmu.write(0xFF0F, mmu.read(0xFF0F) & ~0x04);
+
+        sp--;
+        mmu.write(sp, (pc >> 8) & 0xFF);
+        sp--;
+        mmu.write(sp, pc & 0xFF);
+
+        pc = 0x0050;
+        cycles += 20;
+        return;
+    }
+
+    // Serial (bit 3) - 0x0058
+    if (triggered & 0x08) {
+        ime = false;
+        mmu.write(0xFF0F, IF & ~0x08);
+
+        sp--;
+        mmu.write(sp, (pc >> 8) & 0xFF);
+        sp--;
+        mmu.write(sp, pc & 0xFF);
+
+        pc = 0x0058;
+        cycles += 20;
+        return;
+    }
+
+    // Joypad (bit 4) - 0x0060
+    if (triggered & 0x10) {
         ime = false;
         mmu.write(0xFF0F, IF & ~0x10);
 
-        mmu.write(--sp, (pc >> 8) & 0xFF);
-        mmu.write(--sp, pc & 0xFF);
-        pc = 0x0060;  // Joypad interrupt vector
-        cycles += 20;
+        sp--;
+        mmu.write(sp, (pc >> 8) & 0xFF);
+        sp--;
+        mmu.write(sp, pc & 0xFF);
 
-        if (halted) halted = false;
+        pc = 0x0060;
+        cycles += 20;
         return;
     }
 }

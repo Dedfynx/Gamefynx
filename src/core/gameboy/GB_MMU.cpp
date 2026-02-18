@@ -126,6 +126,10 @@ uint8_t GB_MMU::read(uint16_t addr) const {
 
     // I/O Registers (0xFF00-0xFF7F)
     if (addr >= 0xFF00 && addr < 0xFF80) {
+
+        if (addr == 0xFF04 && timer) {
+            return timer->getDIV();
+        }
         // Registre spécial: Boot ROM disable
         if (addr == 0xFF50) {
             return boot_rom_enabled ? 0x00 : 0x01;
@@ -155,6 +159,10 @@ void GB_MMU::write(uint16_t addr, uint8_t data) {
 
     // VRAM (0x8000-0x9FFF)
     if (addr >= 0x8000 && addr < 0xA000) {
+        static int vramWriteCount = 0;
+        if (vramWriteCount++ < 20) {
+            LOG_DEBUG("VRAM write: [{:#06x}] = {:#04x}", addr, data);
+        }
         memory[addr] = data;
         return;
     }
@@ -187,14 +195,31 @@ void GB_MMU::write(uint16_t addr, uint8_t data) {
         return;
     }
 
+    if (addr == 0xFF04) {
+        if (timer) {
+            timer->resetDIV();
+        }
+        return;
+    }
+
+    // ⚡ TAC (0xFF07) - Gestion spéciale
+    if (addr == 0xFF07) {
+        if (timer) {
+            timer->writeTAC(data);
+        }
+        return;
+    }
+
     // I/O Registers (0xFF00-0xFF7F)
     if (addr >= 0xFF00 && addr < 0xFF80) {
         // Registre spécial: Boot ROM disable
+        memory[addr] = data;
+
         if (addr == 0xFF50 && data != 0) {
             boot_rom_enabled = false;
             LOG_INFO("Boot ROM disabled");
         }
-        memory[addr] = data;
+
         return;
     }
 

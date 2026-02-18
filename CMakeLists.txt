@@ -91,6 +91,8 @@ if(BUILD_CORE_GAMEBOY)
             src/core/gameboy/GB_PPU.h
             src/core/gameboy/GB_Joypad.cpp
             src/core/gameboy/GB_Joypad.h
+            src/core/gameboy/GB_Timer.cpp
+            src/core/gameboy/GB_Timer.h
     )
     target_link_libraries(core_gameboy PUBLIC emu_common)
     target_compile_definitions(core_gameboy PUBLIC CORE_GAMEBOY_ENABLED)

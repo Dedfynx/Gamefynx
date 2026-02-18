@@ -10,7 +10,8 @@ A multi-emulator project built in C++ with imGui and SDL3.
 | CHIP-8 | Almost Done | Simple 8-bit system |
 | Game Boy | In Progress | DMG (original Game Boy) |
 
-
+![Etat Chip-8](assets/README/Chip8.png)
+![Etat Gameboy](assets/README/DMG.png)
 ## Roadmap
 ### Setup
 - [x] Project structure
@@ -29,6 +30,8 @@ A multi-emulator project built in C++ with imGui and SDL3.
 - [ ] PPU
 - [ ] Input handling
 - [ ] Sound
+
+
 
 ### Future Systems
 -

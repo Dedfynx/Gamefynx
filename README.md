@@ -30,6 +30,7 @@ A multi-emulator project built in C++ with imGui and SDL3.
 - [X] PPU
 - [ ] Input handling
 - [ ] Sound
+- [ ] Shader implementation
 
 
 

@@ -6,11 +6,13 @@
 #include "common/types.h"
 
 class GB_MMU;
+class GB_PPU;
+class GB_Timer;
 
 class GB_CPU
 {
 public:
-    explicit GB_CPU(GB_MMU& mmu);
+    explicit GB_CPU(GB_MMU& mmu, GB_PPU& ppu, GB_Timer& timer);
     ~GB_CPU() = default;
 
     void reset();
@@ -22,7 +24,7 @@ public:
     bool isHalted() const { return halted; }
 
     void resetCycles() { cycles = 0; }
-    void addCycles(int c) { cycles += c; }
+    void addCycles(int c);
 
     void handleInterrupts(GB_MMU& mmu);
 
@@ -44,9 +46,12 @@ public:
 
 private:
     GB_MMU& mmu;
+        GB_PPU& ppu;
+        GB_Timer& timer;
 
     bool ime = false;
     bool imeScheduled = false;
+        bool haltBugTriggered;
 
     bool halted = false;
     int cycles = 0;

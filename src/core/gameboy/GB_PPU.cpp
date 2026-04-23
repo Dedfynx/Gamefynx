@@ -18,9 +18,11 @@ void GB_PPU::reset() {
 
 void GB_PPU::step(int cycles) {
     scanlineCounter += cycles;
-    
+    uint8_t stat = mmu.read(0xFF41);
+
     switch (mode) {
         case PPUMode::OAMScan:
+            stat = (stat & ~0x03) | 0x02;
             if (scanlineCounter >= 80) {
                 scanlineCounter -= 80;
                 mode = PPUMode::Drawing;
@@ -28,6 +30,7 @@ void GB_PPU::step(int cycles) {
             break;
             
         case PPUMode::Drawing:
+            stat = (stat & ~0x03) | 0x03;
             if (scanlineCounter >= 172) {
                 scanlineCounter -= 172;
                 mode = PPUMode::HBlank;
@@ -36,6 +39,7 @@ void GB_PPU::step(int cycles) {
             break;
             
         case PPUMode::HBlank:
+            stat = (stat & ~0x03) | 0x00;
             if (scanlineCounter >= 204) {
                 scanlineCounter -= 204;
                 currentScanline++;
@@ -55,6 +59,7 @@ void GB_PPU::step(int cycles) {
             break;
             
         case PPUMode::VBlank:
+            stat = (stat & ~0x03) | 0x01;
             if (scanlineCounter >= 456) {
                 scanlineCounter -= 456;
                 currentScanline++;
@@ -67,6 +72,7 @@ void GB_PPU::step(int cycles) {
             }
             break;
     }
+    mmu.write(0xFF41, stat);
 }
 
 void GB_PPU::renderScanline() {
@@ -106,10 +112,10 @@ void GB_PPU::renderBackground() {
             int8_t signedIndex = static_cast<int8_t>(tileIndex);
             tileAddr = tileDataBase + ((signedIndex + 128) * 16);
         }
-        
+
         uint8_t byte1 = mmu.read(tileAddr + (pixelY * 2));
         uint8_t byte2 = mmu.read(tileAddr + (pixelY * 2) + 1);
-        
+
         int bitPos = 7 - tilePixelX;
         uint8_t colorBit1 = (byte1 >> bitPos) & 1;
         uint8_t colorBit2 = (byte2 >> bitPos) & 1;

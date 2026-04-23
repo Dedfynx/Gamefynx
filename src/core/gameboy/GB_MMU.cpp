@@ -130,6 +130,7 @@ uint8_t GB_MMU::read(uint16_t addr) const {
         if (addr == 0xFF04 && timer) {
             return timer->getDIV();
         }
+
         // Registre spécial: Boot ROM disable
         if (addr == 0xFF50) {
             return boot_rom_enabled ? 0x00 : 0x01;
@@ -214,7 +215,12 @@ void GB_MMU::write(uint16_t addr, uint8_t data) {
     if (addr >= 0xFF00 && addr < 0xFF80) {
         // Registre spécial: Boot ROM disable
         memory[addr] = data;
-
+        //
+        if (addr == 0xFF44) {
+            memory[0xFF44] = 0; // Toute écriture reset LY à 0
+            return;
+        }
+        //
         if (addr == 0xFF50 && data != 0) {
             boot_rom_enabled = false;
             LOG_INFO("Boot ROM disabled");
